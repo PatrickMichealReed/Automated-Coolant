@@ -1,6 +1,6 @@
 # Automated-Coolant
 Code for automated coolant delivery system  
-**Code to be written/combined**  
+**Code to be written/combined:**  
 1) Touch Screen:  
    a) Import 'Graphs' code   
    b) Add slider for concentration selection  
