@@ -1,5 +1,5 @@
 # Automated-Coolant
-Code for automated coolant delivery system/n
+Code for automated coolant delivery system  
 **Code to be written/combined**
 Touch Screen:
   > Import 'Graphs' code
