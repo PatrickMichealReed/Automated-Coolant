@@ -3,26 +3,14 @@
 // Andrei Florian 14/JUN/2018
 #include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
-#include <DHT.h>
+
+#include "Universum_TFTColours.h"
 
 MCUFRIEND_kbv tft;
 #include <TouchScreen.h>
 
 #define MINPRESSURE 200
 #define MAXPRESSURE 1000
-
-#define BLACK   0x0000
-#define BLUE    0x001F
-#define RED     0xF800
-#define GREEN   0x07E0
-#define CYAN    0x07FF
-#define MAGENTA 0xF81F
-#define YELLOW  0xFFE0
-#define WHITE   0xFFFF
-#define PURPLE  0x8010
-#define GREY    0xC618
-#define ORANGE  0xFC00
-
 
 #define indicatorRect(a) fillRect(140, 0, 40, 40, a)
 #define clearScr() fillScreen(BLACK);
@@ -42,7 +30,6 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
   int blockPos = 0;
   float temp;
   int chk;
-  DHT dht(2,DHT11);
   
 // Editable Variables
   bool proDebug = 0;
@@ -53,10 +40,10 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
   String graphName = "Coolant Level [%]";
 
-  int graphRange = 100;
+  int graphRange = 85;
   int markSize = 3;
-  const int numberOfMarksY = 10;
-  const int numberOfMarksX = 12;
+  const int numberOfMarksY = 7;
+  const int numberOfMarksX = 5;
   
 // Calculate Values
   const int originX = 45;
@@ -114,8 +101,6 @@ void drawGraph()
 
 void graph()
 {
-  //chk = dht.read(22);
-  //temp = dht.readTemperature();
   temp = random(5,graphRange);
   timeBlock[valuePos] = (millis() / 1000);
 
@@ -187,7 +172,6 @@ void graph()
 
 void setup()
 {
-  dht.begin();
   if(proDebug)
   {
     Serial.begin(9600);
