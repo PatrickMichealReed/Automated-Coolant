@@ -12,6 +12,7 @@
 #define MAGENTA         0xF81F
 #define YELLOW          0xFFE0
 #define WHITE           0xFFFF
+#define PURPLE          0x8010
 #define LIGHT_GREY      0xBDF7
 #define DARK_GREY       0x7BEF
 #define ORANGE          0xFBE0
