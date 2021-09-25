@@ -1,6 +1,8 @@
 #include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
 
+#include "Universum_TFTColours.h"
+
 MCUFRIEND_kbv tft;
 #include <TouchScreen.h>
 #define MINPRESSURE 200
@@ -8,7 +10,7 @@ MCUFRIEND_kbv tft;
 
 
 #define indicatorRect(a) fillRect(140, 0, 40, 40, a)
-#define clearScr() fillScreen(BLACK);
+#define clearScr() fillScreen(WHITE);
 
 // ALL Touch panels and wiring is DIFFERENT
 // copy-paste results from TouchScreen_Calibr_native.ino
@@ -17,7 +19,9 @@ const int TS_LEFT=923, TS_RT=177, TS_TOP=964, TS_BOT=178;
 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
-Adafruit_GFX_Button NTRX_btn, MAT_btn, LB_btn, LT_btn, conc_btn, back_btn;
+Adafruit_GFX_Button NTRX_btn, MAT_btn, LB_btn, LT_btn, usage_btn, back_btn;
+
+int currentPage = 0;
 
 int pixel_x, pixel_y;     //Touch_getXY() updates global vars
 bool Touch_getXY(void)
@@ -35,37 +39,33 @@ bool Touch_getXY(void)
     return pressed;
 }
 
-#define BLACK   0x0000
-#define BLUE    0x001F
-#define RED     0xF800
-#define GREEN   0x07E0
-#define CYAN    0x07FF
-#define MAGENTA 0xF81F
-#define YELLOW  0xFFE0
-#define WHITE   0xFFFF
 
-int currentPage = 0;
 String NTRX = "NTRX";
 String MAT = "MAT";
 String LB = "LB";
 String LT = "LT";
+String currentMachine;
+
+int alternate = 0;
+int week[] = {7,7};
+int month[] = {30,30};
+int year[] = {12,365};
 
 void setup(void)
 {
     Serial.begin(9600);
+    
     uint16_t ID = tft.readID();
     Serial.print("TFT ID = 0x");
     Serial.println(ID, HEX);
     Serial.println("Calibrate for your Touch Panel");
     if (ID == 0xD3D3) ID = 0x9486; // write-only shield
     tft.begin(ID);
+    
     tft.setRotation(0);            //PORTRAIT
-    tft.fillScreen(BLACK);
+    tft.clearScr();
 
     drawHomeScreen();
-    tft.setCursor(5, 470);
-    tft.setTextColor(WHITE);  tft.setTextSize(1);
-    tft.println("Filling Coolant");
 }
 
 void loop(void)
@@ -100,21 +100,20 @@ void loop(void)
             currentPage = 1; //sets page to LT
             tft.clearScr();
             drawMachinePage(LT);
+            
         }
     }
     if (currentPage == 1) {
         bool down = Touch_getXY();
-        conc_btn.press(down && conc_btn.contains(pixel_x, pixel_y));
+        usage_btn.press(down && usage_btn.contains(pixel_x, pixel_y));
         back_btn.press(down && back_btn.contains(pixel_x, pixel_y));
-
         
-        if (conc_btn.justReleased())
-            conc_btn.drawButton();
-        if (back_btn.justReleased())
-            back_btn.drawButton();
-        
-        if (conc_btn.justPressed()) {
-            conc_btn.drawButton(true);
+        if (usage_btn.justPressed()) {
+            usage_btn.drawButton(true);
+            currentPage = 2; //sets page to coolant usage graph
+            tft.fillScreen(WHITE);
+            tft.setRotation(1);
+            drawGraph(year);
         }
         if (back_btn.justPressed()) {
             back_btn.drawButton(true);
@@ -123,34 +122,70 @@ void loop(void)
             drawHomeScreen();
         }
     }
+    if (currentPage == 2) {
+        bool down = Touch_getXY();
+        back_btn.press(down && back_btn.contains(pixel_x, pixel_y));
+
+        if (back_btn.justPressed()) {
+            back_btn.drawButton(true);
+            currentPage = 1; //sets page to NTRX
+            tft.clearScr();
+            tft.setRotation(0);
+            drawMachinePage(currentMachine);
+        }
+    }
 }
 
 void drawHomeScreen() {
   // Main Screen
-    NTRX_btn.initButton(&tft,  160, 100, 200, 80, WHITE, CYAN, BLACK, "NTRX", 2);
-    MAT_btn.initButton(&tft, 160, 200, 200, 80, WHITE, CYAN, BLACK, "MAT", 2);
-    LB_btn.initButton(&tft,  160, 300, 200, 80, WHITE, CYAN, BLACK, "LB", 2);
-    LT_btn.initButton(&tft, 160, 400, 200, 80, WHITE, CYAN, BLACK, "LT", 2);
+    tft.setCursor(10, 10);
+    tft.setTextColor(BLACK);  tft.setTextSize(1);
+    tft.println("14/10/2021,10:32 PM");
+
+    tft.drawLine(10, 60, 310, 60, BLACK);
+    tft.drawLine(10, 165, 310, 165, BLACK);
+    tft.drawLine(10, 270, 310, 270, BLACK);
+    tft.drawLine(10, 375, 310, 375, BLACK);
+  
+    NTRX_btn.initButton(&tft,  160, 113, 320, 100, WHITE, WHITE, BLUE, "NTRX", 2);
+    MAT_btn.initButton(&tft, 160, 218, 320, 100, WHITE, WHITE, BLUE, "MAT", 2);
+    LB_btn.initButton(&tft,  160, 323, 320, 100, WHITE, WHITE, BLUE, "LB", 2);
+    LT_btn.initButton(&tft, 160, 428, 320, 100, WHITE, WHITE, BLUE, "LT", 2);
     NTRX_btn.drawButton(false);
     MAT_btn.drawButton(false);
     LB_btn.drawButton(false);
     LT_btn.drawButton(false);
-    tft.indicatorRect(BLACK);
 }
 
 void drawMachinePage(String machine) {
   // Machine Directories
-    Serial.print(machine.length());
+    currentMachine = machine;
     tft.setCursor(115+50/machine.length(), 10);
     tft.setTextColor(WHITE);  tft.setTextSize(3);
     tft.println(machine);
 
     tft.drawLine(10, 60, 310, 60, RED);
     
-    conc_btn.initButton(&tft,  160, 200, 200, 80, WHITE, CYAN, BLACK, "Conc.", 2);
-    back_btn.initButton(&tft, 40, 20, 80, 40, WHITE, RED, BLACK, "<- BACK", 1);
-    
-    conc_btn.drawButton(false);
-    back_btn.drawButton(false);
-    
+    usage_btn.initButton(&tft,  160, 200, 200, 80, WHITE, CYAN, BLACK, "Coolant Usage", 2);
+    usage_btn.drawButton(false);
+    backButton();    
+}
+
+void fillingCoolant() {  
+  if(alternate == 1){
+    tft.setCursor(5, 470);
+    tft.setTextColor(BLACK);  tft.setTextSize(1);
+    tft.println("Filling Coolant");
+    alternate =0;
+  } else {
+    tft.setCursor(5, 470);
+    tft.setTextColor(WHITE);  tft.setTextSize(1);
+    tft.println("Filling Coolant");
+    alternate = 1;
+  }
+}
+
+void backButton () {
+  back_btn.initButton(&tft, 40, 20, 80, 40, WHITE, RED, WHITE, "<-BACK", 1);
+  back_btn.drawButton(false);
 }
