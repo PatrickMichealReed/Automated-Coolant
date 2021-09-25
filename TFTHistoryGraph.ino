@@ -1,26 +1,8 @@
-// Universum | Universum Projects > TFTHistoryGraph
+// Universum | Universum Projects > TFTHistoryGraph > Automated Coolant System
 
 // Andrei Florian 14/JUN/2018
-#include <Adafruit_GFX.h>
-#include <MCUFRIEND_kbv.h>
 
-#include "Universum_TFTColours.h"
-
-MCUFRIEND_kbv tft;
-#include <TouchScreen.h>
-
-#define MINPRESSURE 200
-#define MAXPRESSURE 1000
-
-#define indicatorRect(a) fillRect(140, 0, 40, 40, a)
-#define clearScr() fillScreen(BLACK);
-
-// ALL Touch panels and wiring is DIFFERENT
-// copy-paste results from TouchScreen_Calibr_native.ino
-const int XP=6, XM=A2, YP=A1, YM=7; //320x480 ID=0x1581
-const int TS_LEFT=923, TS_RT=177, TS_TOP=964, TS_BOT=178;
-
-TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
+// Altered by Patrick Reed 17/SEPT/2021
 
 // Global variables
   int valueBlock[500];
@@ -30,6 +12,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
   int blockPos = 0;
   float temp;
   int chk;
+  float coolantUse [365]; 
   
 // Editable Variables
   bool proDebug = 0;
@@ -38,22 +21,19 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
   uint16_t pointColor = BLACK;
   uint16_t lineColor = BLACK;
 
-  String graphName = "Coolant Level [%]";
+  String graphName = "Coolant Usage [L/day]";
 
-  int graphRange = 85;
-  int markSize = 3;
+  int graphRange = 15;
+  int markSize = 2;
   const int numberOfMarksY = 7;
-  const int numberOfMarksX = 5;
+
   
 // Calculate Values
   const int originX = 45;
   const int originY = 280;
   const int sizeX = 400;
   const int sizeY = 230;
-  const int deviation = 30;
-  
-  int boxSize = (sizeX / numberOfMarksX);
-  int mark[numberOfMarksX];
+  const int deviation = 40;
   
   const int minorSizeY = (originY + 10);
   const int minorSizeX = (originX - 10);
@@ -62,8 +42,12 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
   int number[numberOfMarksY];
   int val[numberOfMarksY];
 
-void drawGraph()
+void drawGraph(int timeFrame[])
 {
+  const int numberOfMarksX = timeFrame[0];
+  int boxSize = (sizeX / numberOfMarksX);
+  int mark[numberOfMarksX];
+    
   // draw title
   tft.setCursor(90, 15); // set the cursor
   tft.setTextColor(BLUE); // set the colour of the text
@@ -86,6 +70,7 @@ void drawGraph()
   {
     number[i-1] = numberSize*i;
     tft.drawLine(originX, (originY - number[i-1]), minorSizeX, (originY - number[i-1]), graphColor);
+    tft.drawLine(originX, (originY - number[i-1]), originX+sizeX, (originY - number[i-1]), LIGHT_GREY);
   }
   // draw number values
   for(int i = 1; i <= numberOfMarksY; i++)
@@ -96,103 +81,36 @@ void drawGraph()
     tft.setTextSize(1);
     tft.println(val[i-1]);
   }
+
   
-}
+  //X-axis
 
-void graph()
-{
-  temp = random(5,graphRange);
-  timeBlock[valuePos] = (millis() / 1000);
-
-  valueBlock[valuePos] = temp;
+  int pointSeperation = (sizeX / timeFrame[1]);
   
-  if(proDebug)
-  {
-    Serial.println(timeBlock[valuePos]);
+  for(int i = 0; i < 365; i++){
+    coolantUse[i] = random(5.2,8.7);
+    locationBlock[i] = map(coolantUse[i], 0, graphRange, originY, (originY - sizeY));
   }
-
-  if(blockPos < numberOfMarksX)
-  {
-    // print the time
-    tft.setCursor((mark[valuePos] - 5), (originY + 16));
-    tft.setTextColor(graphColor, WHITE);
-    tft.setTextSize(1);
-    tft.println(timeBlock[valuePos]);
-    
-    
-    // map the value
-    locationBlock[valuePos] = map(temp, 0, graphRange, originY, (originY - sizeY));
-
-    // draw point
-    tft.fillRect((mark[valuePos] - 1), (locationBlock[valuePos] - 1), markSize, markSize, pointColor);
-
-    // try connecting to previous point
-    if(valuePos != 0)
-    {
-      tft.drawLine(mark[valuePos], locationBlock[valuePos], mark[(valuePos - 1)], locationBlock[(valuePos - 1)], lineColor);
-    }
-    
-    blockPos++;
-  }
-  else
-  {
-    // clear the graph's canvas
-    tft.fillRect((originX + 2), (originY - sizeY), sizeX, sizeY, WHITE);
-
-    // map the value - current point
-    locationBlock[valuePos] = map(temp, 0, graphRange, originY, (originY - sizeY));
-
-    // draw point - current point
-    tft.fillRect((mark[numberOfMarksX-1]), (locationBlock[valuePos] - 1), markSize, markSize, pointColor);
 
     // draw all points
-    for(int i = 0; i < numberOfMarksX; i++)
+    for(int i = 0; i < timeFrame[1]; i++)
     {
-      tft.fillRect((mark[(blockPos - (i + 1))] - 1), (locationBlock[(valuePos - i)] - 1), markSize, markSize, pointColor);
+      tft.fillRect(pointSeperation*i+mark[0], locationBlock[i], markSize, markSize, pointColor);
     }
 
     // draw all the lines
-    for(int i = 0; i < numberOfMarksX-1; i++)
+    for(int i = 1; i < timeFrame[1]; i++)
     {
-      tft.drawLine(mark[blockPos - (i + 1)], locationBlock[valuePos - i], mark[blockPos - (i + 2)], locationBlock[valuePos - (i + 1)], lineColor);
+      tft.drawLine(pointSeperation*(i-1)+mark[0], locationBlock[i-1], pointSeperation*(i)+mark[0], locationBlock[i], lineColor);
     }
     
     // change time lables
     for(int i = 0; i < numberOfMarksX; i++)
     {
-      tft.setCursor((mark[(numberOfMarksX - 1 - i)] - 5), (originY + 16));
+      tft.setCursor((mark[i] - 5), (originY + 16));
       tft.setTextColor(graphColor, WHITE);
       tft.setTextSize(1);
-      tft.println(timeBlock[valuePos - i]);
+      tft.println(i+1);
     }
-  }
-
-  valuePos++;
-}
-
-void setup()
-{
-  if(proDebug)
-  {
-    Serial.begin(9600);
-    while(!Serial) {};
-  }
-  
-  tft.reset();
-  delay(500);
-  uint16_t identifier = tft.readID();
-  identifier=0x1581;
-
-  tft.begin(identifier);
-  tft.setRotation(1);
-
-  //drawHome();
-  tft.fillScreen(WHITE);
-  drawGraph();
-}
-
-void loop()
-{
-  graph();
-  delay(3000);
+  backButton();
 }
